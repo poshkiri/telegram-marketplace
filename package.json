@@ -8,7 +8,7 @@
     "start:ts": "ts-node telegram-bot/src/bot.ts",
     "dev": "nodemon telegram-bot/bot.js",
     "dev:ts": "nodemon --exec ts-node telegram-bot/src/bot.ts",
-    "build": "tsc",
+    "build": "echo 'Skipping TypeScript build - using JavaScript files directly'",
     "lint": "eslint telegram-bot/src/**/*.ts",
     "lint:fix": "eslint telegram-bot/src/**/*.ts --fix",
     "format": "prettier --write \"telegram-bot/src/**/*.ts\"",
