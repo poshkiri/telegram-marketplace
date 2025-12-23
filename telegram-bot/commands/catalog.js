@@ -2,8 +2,15 @@ const Product = require('../../database/models/Product');
 const User = require('../../database/models/User');
 
 // Показать каталог товаров
-async function showCatalog(bot, chatId, page = 0) {
+async function showCatalog(bot, chatId, page = 0, telegramUser = null) {
   try {
+    // Получаем язык пользователя
+    let lang = 'ru';
+    if (telegramUser) {
+      const user = await User.findOne({ telegram_id: telegramUser.id }).catch(() => null);
+      lang = user?.language || 'ru';
+    }
+    
     const limit = 5; // Товаров на страницу
     const skip = page * limit;
 
@@ -17,27 +24,78 @@ async function showCatalog(bot, chatId, page = 0) {
     const totalProducts = await Product.countDocuments({ status: 'active' });
     const totalPages = Math.ceil(totalProducts / limit);
 
+    const texts = {
+      ru: {
+        title: '📋 **Каталог товаров**',
+        empty: 'Пока товаров нет 😔',
+        becomeSeller: 'Станьте первым продавцом! Используйте /sell для добавления товара.',
+        categories: 'Категории:',
+        category1: '• 💻 IT-продукты (код, скрипты, шаблоны)',
+        category2: '• 📚 Курсы и обучение',
+        category3: '• 🎨 Дизайн и графика',
+        category4: '• 🎮 Игровые товары',
+        category5: '• 🛠 Услуги',
+        addProduct: '💼 Добавить товар',
+        mainMenu: '🔙 Главное меню',
+        found: 'Найдено товаров:',
+        page: 'Страница',
+        of: 'из',
+        seller: 'Продавец',
+        new: '🆕 Новый',
+        search: '🔍 Поиск',
+        sell: '💼 Продавать',
+        back: '◀️ Назад',
+        forward: 'Вперёд ▶️',
+        error: '❌ Ошибка загрузки каталога. Попробуйте позже.'
+      },
+      en: {
+        title: '📋 **Product Catalog**',
+        empty: 'No products yet 😔',
+        becomeSeller: 'Become the first seller! Use /sell to add a product.',
+        categories: 'Categories:',
+        category1: '• 💻 IT products (code, scripts, templates)',
+        category2: '• 📚 Courses and training',
+        category3: '• 🎨 Design and graphics',
+        category4: '• 🎮 Gaming products',
+        category5: '• 🛠 Services',
+        addProduct: '💼 Add product',
+        mainMenu: '🔙 Main Menu',
+        found: 'Products found:',
+        page: 'Page',
+        of: 'of',
+        seller: 'Seller',
+        new: '🆕 New',
+        search: '🔍 Search',
+        sell: '💼 Sell',
+        back: '◀️ Back',
+        forward: 'Forward ▶️',
+        error: '❌ Error loading catalog. Please try later.'
+      }
+    };
+
+    const t = texts[lang] || texts.ru;
+
     if (products.length === 0) {
       const emptyMessage = `
-📋 **Каталог товаров**
+${t.title}
 
-Пока товаров нет 😔
+${t.empty}
 
-Станьте первым продавцом! Используйте /sell для добавления товара.
+${t.becomeSeller}
 
-Категории:
-• 💻 IT-продукты (код, скрипты, шаблоны)
-• 📚 Курсы и обучение
-• 🎨 Дизайн и графика
-• 🎮 Игровые товары
-• 🛠 Услуги
+${t.categories}
+${t.category1}
+${t.category2}
+${t.category3}
+${t.category4}
+${t.category5}
       `;
 
       const keyboard = {
         reply_markup: {
           inline_keyboard: [
-            [{ text: '💼 Добавить товар', callback_data: 'add_product' }],
-            [{ text: '🔙 Главное меню', callback_data: 'main_menu' }]
+            [{ text: t.addProduct, callback_data: 'add_product' }],
+            [{ text: t.mainMenu, callback_data: 'main_menu' }]
           ]
         },
         parse_mode: 'Markdown'
@@ -47,16 +105,16 @@ async function showCatalog(bot, chatId, page = 0) {
     }
 
     // Формируем сообщение с товарами
-    let message = `📋 **Каталог товаров**\n\n`;
-    message += `Найдено товаров: ${totalProducts}\n`;
-    message += `Страница ${page + 1} из ${totalPages}\n\n`;
+    let message = `${t.title}\n\n`;
+    message += `${t.found} ${totalProducts}\n`;
+    message += `${t.page} ${page + 1} ${t.of} ${totalPages}\n\n`;
 
     // Список товаров
     products.forEach((product, index) => {
       const sellerName = product.seller_id?.username || 
                         product.seller_id?.first_name || 
-                        'Продавец';
-      const rating = product.rating > 0 ? `⭐ ${product.rating.toFixed(1)}` : '🆕 Новый';
+                        t.seller;
+      const rating = product.rating > 0 ? `⭐ ${product.rating.toFixed(1)}` : t.new;
       
       message += `${index + 1}. **${product.title}**\n`;
       message += `   💰 ${product.price} USDT | ${rating}\n`;
@@ -76,14 +134,14 @@ async function showCatalog(bot, chatId, page = 0) {
           ]),
           // Навигация
           [
-            ...(page > 0 ? [{ text: '◀️ Назад', callback_data: `catalog_page_${page - 1}` }] : []),
-            ...(page < totalPages - 1 ? [{ text: 'Вперёд ▶️', callback_data: `catalog_page_${page + 1}` }] : [])
+            ...(page > 0 ? [{ text: t.back, callback_data: `catalog_page_${page - 1}` }] : []),
+            ...(page < totalPages - 1 ? [{ text: t.forward, callback_data: `catalog_page_${page + 1}` }] : [])
           ],
           [
-            { text: '🔍 Поиск', callback_data: 'search_products' },
-            { text: '💼 Продавать', callback_data: 'start_selling' }
+            { text: t.search, callback_data: 'search_products' },
+            { text: t.sell, callback_data: 'start_selling' }
           ],
-          [{ text: '🔙 Главное меню', callback_data: 'main_menu' }]
+          [{ text: t.mainMenu, callback_data: 'main_menu' }]
         ]
       },
       parse_mode: 'Markdown'
@@ -92,7 +150,13 @@ async function showCatalog(bot, chatId, page = 0) {
     bot.sendMessage(chatId, message, keyboard);
   } catch (error) {
     console.error('❌ Ошибка показа каталога:', error);
-    bot.sendMessage(chatId, '❌ Ошибка загрузки каталога. Попробуйте позже.');
+    const user = await User.findOne({ telegram_id: telegramUser?.id }).catch(() => null);
+    const lang = user?.language || 'ru';
+    const errorTexts = {
+      ru: '❌ Ошибка загрузки каталога. Попробуйте позже.',
+      en: '❌ Error loading catalog. Please try later.'
+    };
+    bot.sendMessage(chatId, errorTexts[lang] || errorTexts.ru);
   }
 }
 
@@ -102,13 +166,30 @@ async function showProduct(bot, chatId, productId, telegramUser = null) {
     const product = await Product.findById(productId)
       .populate('seller_id', 'username first_name rating sales_count');
 
+    // Получаем язык пользователя
+    let lang = 'ru';
+    if (telegramUser) {
+      const user = await User.findOne({ telegram_id: telegramUser.id }).catch(() => null);
+      lang = user?.language || 'ru';
+    }
+
+    const errorTexts = {
+      ru: '❌ Товар не найден или недоступен.',
+      en: '❌ Product not found or unavailable.'
+    };
+
     if (!product || product.status !== 'active') {
-      return bot.sendMessage(chatId, '❌ Товар не найден или недоступен.');
+      return bot.sendMessage(chatId, errorTexts[lang] || errorTexts.ru);
     }
 
     const seller = product.seller_id;
-    const sellerName = seller?.username || seller?.first_name || 'Продавец';
-    const sellerRating = seller?.rating > 0 ? `⭐ ${seller.rating.toFixed(1)}` : '🆕 Новый продавец';
+    const sellerTexts = {
+      ru: { seller: 'Продавец', newSeller: '🆕 Новый продавец' },
+      en: { seller: 'Seller', newSeller: '🆕 New seller' }
+    };
+    const st = sellerTexts[lang] || sellerTexts.ru;
+    const sellerName = seller?.username || seller?.first_name || st.seller;
+    const sellerRating = seller?.rating > 0 ? `⭐ ${seller.rating.toFixed(1)}` : st.newSeller;
     const salesCount = seller?.sales_count || 0;
 
     // Увеличиваем просмотры
@@ -198,7 +279,13 @@ async function showProduct(bot, chatId, productId, telegramUser = null) {
     bot.sendMessage(chatId, message, keyboard);
   } catch (error) {
     console.error('❌ Ошибка показа товара:', error);
-    bot.sendMessage(chatId, '❌ Ошибка загрузки товара.');
+    const user = await User.findOne({ telegram_id: telegramUser?.id }).catch(() => null);
+    const lang = user?.language || 'ru';
+    const errorTexts = {
+      ru: '❌ Ошибка загрузки товара.',
+      en: '❌ Error loading product.'
+    };
+    bot.sendMessage(chatId, errorTexts[lang] || errorTexts.ru);
   }
 }
 
@@ -216,8 +303,15 @@ function getCategoryEmoji(category) {
 }
 
 // Поиск товаров
-async function searchProducts(bot, chatId, query) {
+async function searchProducts(bot, chatId, query, telegramUser = null) {
   try {
+    // Получаем язык пользователя
+    let lang = 'ru';
+    if (telegramUser) {
+      const user = await User.findOne({ telegram_id: telegramUser.id }).catch(() => null);
+      lang = user?.language || 'ru';
+    }
+
     const products = await Product.find({
       status: 'active',
       $or: [
@@ -229,12 +323,35 @@ async function searchProducts(bot, chatId, query) {
       .limit(10)
       .sort({ created_at: -1 });
 
+    const texts = {
+      ru: {
+        notFound: '❌ По запросу',
+        nothingFound: 'ничего не найдено.',
+        results: '🔍 **Результаты поиска:**',
+        found: 'Найдено:',
+        products: 'товаров',
+        back: '🔙 Назад к каталогу',
+        error: '❌ Ошибка поиска товаров.'
+      },
+      en: {
+        notFound: '❌ Nothing found for query',
+        nothingFound: '.',
+        results: '🔍 **Search results:**',
+        found: 'Found:',
+        products: 'products',
+        back: '🔙 Back to catalog',
+        error: '❌ Error searching products.'
+      }
+    };
+
+    const t = texts[lang] || texts.ru;
+
     if (products.length === 0) {
-      return bot.sendMessage(chatId, `❌ По запросу "${query}" ничего не найдено.`);
+      return bot.sendMessage(chatId, `${t.notFound} "${query}" ${t.nothingFound}`);
     }
 
-    let message = `🔍 **Результаты поиска: "${query}"**\n\n`;
-    message += `Найдено: ${products.length} товаров\n\n`;
+    let message = `${t.results} "${query}"**\n\n`;
+    message += `${t.found} ${products.length} ${t.products}\n\n`;
 
     products.forEach((product, index) => {
       message += `${index + 1}. **${product.title}**\n`;
@@ -250,7 +367,7 @@ async function searchProducts(bot, chatId, query) {
               callback_data: `view_product_${product._id}`
             }
           ]),
-          [{ text: '🔙 Назад к каталогу', callback_data: 'catalog' }]
+          [{ text: t.back, callback_data: 'catalog' }]
         ]
       },
       parse_mode: 'Markdown'
@@ -259,7 +376,13 @@ async function searchProducts(bot, chatId, query) {
     bot.sendMessage(chatId, message, keyboard);
   } catch (error) {
     console.error('❌ Ошибка поиска:', error);
-    bot.sendMessage(chatId, '❌ Ошибка поиска товаров.');
+    const user = await User.findOne({ telegram_id: telegramUser?.id }).catch(() => null);
+    const lang = user?.language || 'ru';
+    const errorTexts = {
+      ru: '❌ Ошибка поиска товаров.',
+      en: '❌ Error searching products.'
+    };
+    bot.sendMessage(chatId, errorTexts[lang] || errorTexts.ru);
   }
 }
 

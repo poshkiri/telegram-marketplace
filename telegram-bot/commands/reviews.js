@@ -9,8 +9,29 @@ const User = require('../../database/models/User');
 async function showReviewForm(bot, chatId, orderId, telegramUser) {
   try {
     const user = await User.findOne({ telegram_id: telegramUser.id });
+    const lang = user?.language || 'ru';
+    
+    const errorTexts = {
+      ru: {
+        userNotFound: '❌ Пользователь не найден.',
+        orderNotFound: '❌ Заказ не найден.',
+        notYourOrder: '❌ Это не ваш заказ.',
+        notDelivered: '❌ Отзыв можно оставить только после получения товара.',
+        alreadyReviewed: '✅ Вы уже оставили отзыв на этот заказ.'
+      },
+      en: {
+        userNotFound: '❌ User not found.',
+        orderNotFound: '❌ Order not found.',
+        notYourOrder: '❌ This is not your order.',
+        notDelivered: '❌ Review can only be left after receiving the product.',
+        alreadyReviewed: '✅ You have already left a review for this order.'
+      }
+    };
+    
+    const et = errorTexts[lang] || errorTexts.ru;
+    
     if (!user) {
-      return bot.sendMessage(chatId, '❌ Пользователь не найден.');
+      return bot.sendMessage(chatId, et.userNotFound);
     }
 
     const order = await Order.findById(orderId)
@@ -18,26 +39,24 @@ async function showReviewForm(bot, chatId, orderId, telegramUser) {
       .populate('seller_id', 'username first_name');
 
     if (!order) {
-      return bot.sendMessage(chatId, '❌ Заказ не найден.');
+      return bot.sendMessage(chatId, et.orderNotFound);
     }
 
     // Проверяем, что заказ принадлежит пользователю
     if (order.buyer_id.toString() !== user._id.toString()) {
-      return bot.sendMessage(chatId, '❌ Это не ваш заказ.');
+      return bot.sendMessage(chatId, et.notYourOrder);
     }
 
     // Проверяем, что заказ доставлен
     if (order.status !== 'delivered' && order.status !== 'completed') {
-      return bot.sendMessage(chatId, '❌ Отзыв можно оставить только после получения товара.');
+      return bot.sendMessage(chatId, et.notDelivered);
     }
 
     // Проверяем, не оставлен ли уже отзыв
     const existingReview = await Review.findOne({ order_id: orderId });
     if (existingReview) {
-      return bot.sendMessage(chatId, '✅ Вы уже оставили отзыв на этот заказ.');
+      return bot.sendMessage(chatId, et.alreadyReviewed);
     }
-
-    const lang = user.language || 'ru';
 
     const texts = {
       ru: {
@@ -90,7 +109,13 @@ async function showReviewForm(bot, chatId, orderId, telegramUser) {
     await bot.sendMessage(chatId, message, keyboard);
   } catch (error) {
     console.error('❌ Ошибка показа формы отзыва:', error);
-    bot.sendMessage(chatId, '❌ Произошла ошибка. Попробуйте позже.');
+    const user = await User.findOne({ telegram_id: telegramUser.id }).catch(() => null);
+    const lang = user?.language || 'ru';
+    const errorTexts = {
+      ru: '❌ Произошла ошибка. Попробуйте позже.',
+      en: '❌ An error occurred. Please try later.'
+    };
+    bot.sendMessage(chatId, errorTexts[lang] || errorTexts.ru);
   }
 }
 
@@ -103,8 +128,13 @@ async function handleRatingSelection(bot, chatId, rating, orderId, telegramUser)
     if (!user) return;
 
     const order = await Order.findById(orderId);
+    const lang = user.language || 'ru';
+    const errorTexts = {
+      ru: '❌ Ошибка доступа к заказу.',
+      en: '❌ Order access error.'
+    };
     if (!order || order.buyer_id.toString() !== user._id.toString()) {
-      return bot.sendMessage(chatId, '❌ Ошибка доступа к заказу.');
+      return bot.sendMessage(chatId, errorTexts[lang] || errorTexts.ru);
     }
 
     const lang = user.language || 'ru';
@@ -148,7 +178,13 @@ async function handleRatingSelection(bot, chatId, rating, orderId, telegramUser)
     await bot.sendMessage(chatId, `${t.thanks}\n\n${t.comment}`, keyboard);
   } catch (error) {
     console.error('❌ Ошибка обработки рейтинга:', error);
-    bot.sendMessage(chatId, '❌ Произошла ошибка.');
+    const user = await User.findOne({ telegram_id: telegramUser.id }).catch(() => null);
+    const lang = user?.language || 'ru';
+    const errorTexts = {
+      ru: '❌ Произошла ошибка.',
+      en: '❌ An error occurred.'
+    };
+    bot.sendMessage(chatId, errorTexts[lang] || errorTexts.ru);
   }
 }
 
@@ -164,14 +200,27 @@ async function saveReview(bot, chatId, orderId, rating, comment = null, telegram
       .populate('product_id')
       .populate('seller_id');
 
+    const lang = user.language || 'ru';
+    const errorTexts = {
+      ru: {
+        accessError: '❌ Ошибка доступа к заказу.',
+        alreadyReviewed: '✅ Вы уже оставили отзыв на этот заказ.'
+      },
+      en: {
+        accessError: '❌ Order access error.',
+        alreadyReviewed: '✅ You have already left a review for this order.'
+      }
+    };
+    const et = errorTexts[lang] || errorTexts.ru;
+    
     if (!order || order.buyer_id.toString() !== user._id.toString()) {
-      return bot.sendMessage(chatId, '❌ Ошибка доступа к заказу.');
+      return bot.sendMessage(chatId, et.accessError);
     }
 
     // Проверяем, не оставлен ли уже отзыв
     const existingReview = await Review.findOne({ order_id: orderId });
     if (existingReview) {
-      return bot.sendMessage(chatId, '✅ Вы уже оставили отзыв на этот заказ.');
+      return bot.sendMessage(chatId, et.alreadyReviewed);
     }
 
     // Создаем отзыв
@@ -224,7 +273,13 @@ async function saveReview(bot, chatId, orderId, rating, comment = null, telegram
     }
   } catch (error) {
     console.error('❌ Ошибка сохранения отзыва:', error);
-    bot.sendMessage(chatId, '❌ Произошла ошибка при сохранении отзыва.');
+    const user = await User.findOne({ telegram_id: telegramUser.id }).catch(() => null);
+    const lang = user?.language || 'ru';
+    const errorTexts = {
+      ru: '❌ Произошла ошибка при сохранении отзыва.',
+      en: '❌ An error occurred while saving the review.'
+    };
+    bot.sendMessage(chatId, errorTexts[lang] || errorTexts.ru);
   }
 }
 
@@ -265,10 +320,16 @@ async function showProductReviews(bot, chatId, productId, lang = 'ru') {
 
     let message = `${t.title}\n\n`;
 
+    const buyerTexts = {
+      ru: 'Покупатель',
+      en: 'Buyer'
+    };
+    const buyerText = buyerTexts[lang] || buyerTexts.ru;
+
     reviews.forEach((review, index) => {
       const buyerName = review.buyer_id?.username || 
                        review.buyer_id?.first_name || 
-                       'Покупатель';
+                       buyerText;
       const stars = '⭐'.repeat(review.rating);
       
       message += `${index + 1}. ${buyerName} ${stars} (${review.rating}/5)\n`;
@@ -281,7 +342,11 @@ async function showProductReviews(bot, chatId, productId, lang = 'ru') {
     await bot.sendMessage(chatId, message);
   } catch (error) {
     console.error('❌ Ошибка показа отзывов:', error);
-    bot.sendMessage(chatId, '❌ Произошла ошибка при загрузке отзывов.');
+    const errorTexts = {
+      ru: '❌ Произошла ошибка при загрузке отзывов.',
+      en: '❌ An error occurred while loading reviews.'
+    };
+    bot.sendMessage(chatId, errorTexts[lang] || errorTexts.ru);
   }
 }
 

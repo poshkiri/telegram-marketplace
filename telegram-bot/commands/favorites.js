@@ -8,13 +8,28 @@ const User = require('../../database/models/User');
 async function addToFavorites(bot, chatId, productId, telegramUser) {
   try {
     const user = await User.findOne({ telegram_id: telegramUser.id });
+    const lang = user?.language || 'ru';
+    
+    const errorTexts = {
+      ru: {
+        userNotFound: '❌ Пользователь не найден.',
+        productNotFound: '❌ Товар не найден.'
+      },
+      en: {
+        userNotFound: '❌ User not found.',
+        productNotFound: '❌ Product not found.'
+      }
+    };
+    
+    const et = errorTexts[lang] || errorTexts.ru;
+    
     if (!user) {
-      return bot.sendMessage(chatId, '❌ Пользователь не найден.');
+      return bot.sendMessage(chatId, et.userNotFound);
     }
 
     const product = await Product.findById(productId);
     if (!product) {
-      return bot.sendMessage(chatId, '❌ Товар не найден.');
+      return bot.sendMessage(chatId, et.productNotFound);
     }
 
     // Проверяем, не добавлен ли уже в избранное
@@ -56,7 +71,13 @@ async function addToFavorites(bot, chatId, productId, telegramUser) {
       return bot.sendMessage(chatId, texts[lang] || texts.ru);
     }
     console.error('❌ Ошибка добавления в избранное:', error);
-    bot.sendMessage(chatId, '❌ Произошла ошибка.');
+    const user = await User.findOne({ telegram_id: telegramUser.id }).catch(() => null);
+    const lang = user?.language || 'ru';
+    const errorTexts = {
+      ru: '❌ Произошла ошибка.',
+      en: '❌ An error occurred.'
+    };
+    bot.sendMessage(chatId, errorTexts[lang] || errorTexts.ru);
   }
 }
 
@@ -82,7 +103,13 @@ async function removeFromFavorites(bot, chatId, productId, telegramUser) {
     await bot.sendMessage(chatId, texts[lang] || texts.ru);
   } catch (error) {
     console.error('❌ Ошибка удаления из избранного:', error);
-    bot.sendMessage(chatId, '❌ Произошла ошибка.');
+    const user = await User.findOne({ telegram_id: telegramUser.id }).catch(() => null);
+    const lang = user?.language || 'ru';
+    const errorTexts = {
+      ru: '❌ Произошла ошибка.',
+      en: '❌ An error occurred.'
+    };
+    bot.sendMessage(chatId, errorTexts[lang] || errorTexts.ru);
   }
 }
 
@@ -92,8 +119,15 @@ async function removeFromFavorites(bot, chatId, productId, telegramUser) {
 async function showFavorites(bot, chatId, telegramUser, page = 0) {
   try {
     const user = await User.findOne({ telegram_id: telegramUser.id });
+    const lang = user?.language || 'ru';
+    
+    const errorTexts = {
+      ru: '❌ Пользователь не найден.',
+      en: '❌ User not found.'
+    };
+    
     if (!user) {
-      return bot.sendMessage(chatId, '❌ Пользователь не найден.');
+      return bot.sendMessage(chatId, errorTexts[lang] || errorTexts.ru);
     }
 
     const lang = user.language || 'ru';
@@ -161,12 +195,12 @@ async function showFavorites(bot, chatId, telegramUser, page = 0) {
           ]),
           // Навигация
           [
-            ...(page > 0 ? [{ text: '◀️ Назад', callback_data: `favorites_page_${page - 1}` }] : []),
-            ...(page < totalPages - 1 ? [{ text: 'Вперёд ▶️', callback_data: `favorites_page_${page + 1}` }] : [])
+            ...(page > 0 ? [{ text: lang === 'ru' ? '◀️ Назад' : '◀️ Back', callback_data: `favorites_page_${page - 1}` }] : []),
+            ...(page < totalPages - 1 ? [{ text: lang === 'ru' ? 'Вперёд ▶️' : 'Forward ▶️', callback_data: `favorites_page_${page + 1}` }] : [])
           ],
           [
-            { text: '🛒 Каталог', callback_data: 'catalog' },
-            { text: '🔙 Главное меню', callback_data: 'main_menu' }
+            { text: lang === 'ru' ? '🛒 Каталог' : '🛒 Catalog', callback_data: 'catalog' },
+            { text: lang === 'ru' ? '🔙 Главное меню' : '🔙 Main Menu', callback_data: 'main_menu' }
           ]
         ]
       },
@@ -176,7 +210,13 @@ async function showFavorites(bot, chatId, telegramUser, page = 0) {
     await bot.sendMessage(chatId, message, keyboard);
   } catch (error) {
     console.error('❌ Ошибка показа избранного:', error);
-    bot.sendMessage(chatId, '❌ Произошла ошибка при загрузке избранного.');
+    const user = await User.findOne({ telegram_id: telegramUser.id }).catch(() => null);
+    const lang = user?.language || 'ru';
+    const errorTexts = {
+      ru: '❌ Произошла ошибка при загрузке избранного.',
+      en: '❌ An error occurred while loading favorites.'
+    };
+    bot.sendMessage(chatId, errorTexts[lang] || errorTexts.ru);
   }
 }
 

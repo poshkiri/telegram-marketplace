@@ -12,20 +12,37 @@ const activePaymentChecks = new Map();
 async function initiatePurchase(bot, chatId, productId, telegramUser) {
   try {
     const user = await User.findOne({ telegram_id: telegramUser.id });
+    const lang = user?.language || 'ru';
+    
+    const errorTexts = {
+      ru: {
+        userNotFound: '❌ Пользователь не найден. Используйте /start',
+        productNotFound: '❌ Товар не найден или недоступен.',
+        ownProduct: '❌ Вы не можете купить свой собственный товар.'
+      },
+      en: {
+        userNotFound: '❌ User not found. Use /start',
+        productNotFound: '❌ Product not found or unavailable.',
+        ownProduct: '❌ You cannot buy your own product.'
+      }
+    };
+    
+    const et = errorTexts[lang] || errorTexts.ru;
+    
     if (!user) {
-      return bot.sendMessage(chatId, '❌ Пользователь не найден. Используйте /start');
+      return bot.sendMessage(chatId, et.userNotFound);
     }
 
     const product = await Product.findById(productId)
       .populate('seller_id', 'username first_name');
 
     if (!product || product.status !== 'active') {
-      return bot.sendMessage(chatId, '❌ Товар не найден или недоступен.');
+      return bot.sendMessage(chatId, et.productNotFound);
     }
 
     // Проверяем, не пытается ли пользователь купить свой товар
     if (product.seller_id._id.toString() === user._id.toString()) {
-      return bot.sendMessage(chatId, '❌ Вы не можете купить свой собственный товар.');
+      return bot.sendMessage(chatId, et.ownProduct);
     }
 
     const lang = user.language || 'ru';
@@ -34,7 +51,13 @@ async function initiatePurchase(bot, chatId, productId, telegramUser) {
     await showNetworkSelection(bot, chatId, productId, lang);
   } catch (error) {
     console.error('❌ Ошибка инициирования покупки:', error);
-    bot.sendMessage(chatId, '❌ Произошла ошибка. Попробуйте позже.');
+    const user = await User.findOne({ telegram_id: telegramUser.id }).catch(() => null);
+    const lang = user?.language || 'ru';
+    const errorTexts = {
+      ru: '❌ Произошла ошибка. Попробуйте позже.',
+      en: '❌ An error occurred. Please try later.'
+    };
+    bot.sendMessage(chatId, errorTexts[lang] || errorTexts.ru);
   }
 }
 
@@ -90,22 +113,37 @@ async function showNetworkSelection(bot, chatId, productId, lang = 'ru') {
 async function processNetworkSelection(bot, chatId, network, productId, telegramUser) {
   try {
     const user = await User.findOne({ telegram_id: telegramUser.id });
+    const lang = user?.language || 'ru';
+    
+    const errorTexts = {
+      ru: {
+        userNotFound: '❌ Пользователь не найден.',
+        productNotFound: '❌ Товар не найден или недоступен.',
+        networkUnavailable: '❌ Сеть {network} временно недоступна. Выберите другую сеть.'
+      },
+      en: {
+        userNotFound: '❌ User not found.',
+        productNotFound: '❌ Product not found or unavailable.',
+        networkUnavailable: '❌ Network {network} is temporarily unavailable. Choose another network.'
+      }
+    };
+    
+    const et = errorTexts[lang] || errorTexts.ru;
+    
     if (!user) {
-      return bot.sendMessage(chatId, '❌ Пользователь не найден.');
+      return bot.sendMessage(chatId, et.userNotFound);
     }
 
     const product = await Product.findById(productId)
       .populate('seller_id');
 
     if (!product || product.status !== 'active') {
-      return bot.sendMessage(chatId, '❌ Товар не найден или недоступен.');
+      return bot.sendMessage(chatId, et.productNotFound);
     }
-
-    const lang = user.language || 'ru';
 
     // Проверяем наличие кошелька для выбранной сети
     if (!paymentService.WALLETS[network]) {
-      return bot.sendMessage(chatId, `❌ Сеть ${network} временно недоступна. Выберите другую сеть.`);
+      return bot.sendMessage(chatId, et.networkUnavailable.replace('{network}', network));
     }
 
     // Создаем заказ
@@ -175,7 +213,13 @@ async function processNetworkSelection(bot, chatId, network, productId, telegram
 
   } catch (error) {
     console.error('❌ Ошибка обработки выбора сети:', error);
-    bot.sendMessage(chatId, '❌ Произошла ошибка при создании заказа. Попробуйте позже.');
+    const user = await User.findOne({ telegram_id: telegramUser.id }).catch(() => null);
+    const lang = user?.language || 'ru';
+    const errorTexts = {
+      ru: '❌ Произошла ошибка при создании заказа. Попробуйте позже.',
+      en: '❌ An error occurred while creating the order. Please try later.'
+    };
+    bot.sendMessage(chatId, errorTexts[lang] || errorTexts.ru);
   }
 }
 
@@ -256,17 +300,30 @@ async function manualCheckPayment(bot, chatId, orderId, telegramUser) {
     const user = await User.findOne({ telegram_id: telegramUser.id });
     const lang = user?.language || 'ru';
 
+    const errorTexts = {
+      ru: {
+        orderNotFound: '❌ Заказ не найден.',
+        notYourOrder: '❌ Это не ваш заказ.'
+      },
+      en: {
+        orderNotFound: '❌ Order not found.',
+        notYourOrder: '❌ This is not your order.'
+      }
+    };
+    
+    const et = errorTexts[lang] || errorTexts.ru;
+
     const order = await Order.findById(orderId)
       .populate('product_id')
       .populate('buyer_id');
 
     if (!order) {
-      return bot.sendMessage(chatId, '❌ Заказ не найден.');
+      return bot.sendMessage(chatId, et.orderNotFound);
     }
 
     // Проверяем, что заказ принадлежит пользователю
     if (order.buyer_id.telegram_id !== telegramUser.id) {
-      return bot.sendMessage(chatId, '❌ Это не ваш заказ.');
+      return bot.sendMessage(chatId, et.notYourOrder);
     }
 
     if (order.status !== 'pending') {
@@ -304,7 +361,13 @@ async function manualCheckPayment(bot, chatId, orderId, telegramUser) {
     }
   } catch (error) {
     console.error('❌ Ошибка ручной проверки платежа:', error);
-    bot.sendMessage(chatId, '❌ Произошла ошибка при проверке платежа.');
+    const user = await User.findOne({ telegram_id: telegramUser.id }).catch(() => null);
+    const lang = user?.language || 'ru';
+    const errorTexts = {
+      ru: '❌ Произошла ошибка при проверке платежа.',
+      en: '❌ An error occurred while checking payment.'
+    };
+    bot.sendMessage(chatId, errorTexts[lang] || errorTexts.ru);
   }
 }
 
@@ -368,18 +431,31 @@ async function deliverProduct(bot, chatId, order, lang = 'ru') {
 
     deliveryMessage += `\n${t.thanks}\n${t.support}`;
 
+    const buttonTexts = {
+      ru: {
+        review: '⭐ Оставить отзыв',
+        orders: '📦 Мои заказы'
+      },
+      en: {
+        review: '⭐ Leave a review',
+        orders: '📦 My orders'
+      }
+    };
+    
+    const bt = buttonTexts[lang] || buttonTexts.ru;
+
     const keyboard = {
       reply_markup: {
         inline_keyboard: [
           [
             { 
-              text: lang === 'ru' ? '⭐ Оставить отзыв' : '⭐ Leave a review', 
+              text: bt.review, 
               callback_data: `review_order_${order._id}` 
             }
           ],
           [
             { 
-              text: lang === 'ru' ? '📦 Мои заказы' : '📦 My orders', 
+              text: bt.orders, 
               callback_data: 'my_orders' 
             }
           ]
@@ -402,7 +478,11 @@ async function deliverProduct(bot, chatId, order, lang = 'ru') {
 
   } catch (error) {
     console.error('❌ Ошибка доставки товара:', error);
-    bot.sendMessage(chatId, '❌ Произошла ошибка при доставке товара. Обратитесь в поддержку.');
+    const errorTexts = {
+      ru: '❌ Произошла ошибка при доставке товара. Обратитесь в поддержку.',
+      en: '❌ An error occurred while delivering the product. Please contact support.'
+    };
+    bot.sendMessage(chatId, errorTexts[lang] || errorTexts.ru);
   }
 }
 
@@ -411,20 +491,37 @@ async function deliverProduct(bot, chatId, order, lang = 'ru') {
  */
 async function cancelOrder(bot, chatId, orderId, telegramUser) {
   try {
+    const user = await User.findOne({ telegram_id: telegramUser.id });
+    const lang = user?.language || 'ru';
+    
+    const errorTexts = {
+      ru: {
+        orderNotFound: '❌ Заказ не найден.',
+        notYourOrder: '❌ Это не ваш заказ.',
+        cannotCancel: '❌ Нельзя отменить обработанный заказ.'
+      },
+      en: {
+        orderNotFound: '❌ Order not found.',
+        notYourOrder: '❌ This is not your order.',
+        cannotCancel: '❌ Cannot cancel a processed order.'
+      }
+    };
+    
+    const et = errorTexts[lang] || errorTexts.ru;
+    
     const order = await Order.findById(orderId);
 
     if (!order) {
-      return bot.sendMessage(chatId, '❌ Заказ не найден.');
+      return bot.sendMessage(chatId, et.orderNotFound);
     }
 
     // Проверяем, что заказ принадлежит пользователю
-    const user = await User.findOne({ telegram_id: telegramUser.id });
     if (order.buyer_id.toString() !== user._id.toString()) {
-      return bot.sendMessage(chatId, '❌ Это не ваш заказ.');
+      return bot.sendMessage(chatId, et.notYourOrder);
     }
 
     if (order.status !== 'pending') {
-      return bot.sendMessage(chatId, '❌ Нельзя отменить обработанный заказ.');
+      return bot.sendMessage(chatId, et.cannotCancel);
     }
 
     // Останавливаем проверку платежа, если она активна
@@ -442,11 +539,16 @@ async function cancelOrder(bot, chatId, orderId, telegramUser) {
       en: '❌ Order cancelled.',
     };
 
-    const lang = user?.language || 'ru';
     await bot.sendMessage(chatId, cancelTexts[lang] || cancelTexts.ru);
   } catch (error) {
     console.error('❌ Ошибка отмены заказа:', error);
-    bot.sendMessage(chatId, '❌ Произошла ошибка при отмене заказа.');
+    const user = await User.findOne({ telegram_id: telegramUser.id }).catch(() => null);
+    const lang = user?.language || 'ru';
+    const errorTexts = {
+      ru: '❌ Произошла ошибка при отмене заказа.',
+      en: '❌ An error occurred while cancelling the order.'
+    };
+    bot.sendMessage(chatId, errorTexts[lang] || errorTexts.ru);
   }
 }
 
