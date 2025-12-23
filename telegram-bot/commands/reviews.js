@@ -83,7 +83,7 @@ async function showReviewForm(bot, chatId, orderId, telegramUser) {
 
     let message = `${t.title}\n\n`;
     message += `${t.product}: ${order.product_id.title}\n`;
-    message += `${t.seller}: ${order.seller_id.username || order.seller_id.first_name || 'Продавец'}\n\n`;
+    message += `${t.seller}: ${order.seller_id.username || order.seller_id.first_name || t.seller}\n\n`;
     message += `${t.rating}\n`;
 
     const keyboard = {
@@ -240,7 +240,7 @@ async function saveReview(bot, chatId, orderId, rating, comment = null, telegram
     order.completed_at = new Date();
     await order.save();
 
-    const lang = user.language || 'ru';
+    // Язык уже получен выше (строка 203), используем его
 
     const texts = {
       ru: {

@@ -328,11 +328,21 @@ async function manualCheckPayment(bot, chatId, orderId, telegramUser) {
 
     if (order.status !== 'pending') {
       const statusTexts = {
-        ru: { paid: '✅ Платеж уже подтвержден!', delivered: '✅ Товар уже доставлен!' },
-        en: { paid: '✅ Payment already confirmed!', delivered: '✅ Product already delivered!' }
+        ru: { 
+          paid: '✅ Платеж уже подтвержден!', 
+          delivered: '✅ Товар уже доставлен!',
+          completed: '✅ Заказ обработан.',
+          cancelled: '✅ Заказ отменен.'
+        },
+        en: { 
+          paid: '✅ Payment already confirmed!', 
+          delivered: '✅ Product already delivered!',
+          completed: '✅ Order processed.',
+          cancelled: '✅ Order cancelled.'
+        }
       };
       const t = statusTexts[lang] || statusTexts.ru;
-      return bot.sendMessage(chatId, t[order.status] || '✅ Заказ обработан.');
+      return bot.sendMessage(chatId, t[order.status] || t.completed);
     }
 
     // Проверяем платеж

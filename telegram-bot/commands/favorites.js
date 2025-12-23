@@ -166,6 +166,12 @@ async function showFavorites(bot, chatId, telegramUser, page = 0) {
     };
 
     const t = texts[lang] || texts.ru;
+    
+    const productTexts = {
+      ru: 'Товар',
+      en: 'Product'
+    };
+    const productText = productTexts[lang] || productTexts.ru;
 
     let message = `${t.title}\n\n`;
     message += `${t.page} ${page + 1} ${t.of} ${totalPages}\n\n`;
@@ -186,7 +192,7 @@ async function showFavorites(bot, chatId, telegramUser, page = 0) {
           // Кнопки товаров
           ...favorites.map((favorite, index) => [
             {
-              text: `${index + 1}. ${favorite.product_id?.title || 'Товар'} - ${favorite.product_id?.price || 0} USDT`,
+              text: `${index + 1}. ${favorite.product_id?.title || productText} - ${favorite.product_id?.price || 0} USDT`,
               callback_data: `view_product_${favorite.product_id?._id}`
             }
           ]),

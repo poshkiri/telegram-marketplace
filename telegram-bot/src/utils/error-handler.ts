@@ -47,7 +47,8 @@ export async function handleError(
   } else if (error instanceof ValidationError) {
     message = `${t.validation}: ${error.message}`;
     if (error.fields.length > 0) {
-      message += `\nПоля: ${error.fields.join(', ')}`;
+      const fieldsText = language === 'en' ? 'Fields' : language === 'uk' ? 'Поля' : 'Поля';
+      message += `\n${fieldsText}: ${error.fields.join(', ')}`;
     }
   } else if (error instanceof UnauthorizedError) {
     message = t.unauthorized;
