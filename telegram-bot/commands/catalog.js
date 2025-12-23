@@ -1,5 +1,6 @@
 const Product = require('../../database/models/Product');
 const User = require('../../database/models/User');
+const { escapeMarkdown } = require('../utils/markdown');
 
 // Показать каталог товаров
 async function showCatalog(bot, chatId, page = 0, telegramUser = null) {
@@ -109,6 +110,30 @@ ${t.category5}
     message += `${t.found} ${totalProducts}\n`;
     message += `${t.page} ${page + 1} ${t.of} ${totalPages}\n\n`;
 
+    // Функция для экранирования Markdown
+    function escapeMarkdown(text) {
+      if (!text) return '';
+      return String(text)
+        .replace(/\*/g, '\\*')
+        .replace(/_/g, '\\_')
+        .replace(/\[/g, '\\[')
+        .replace(/\]/g, '\\]')
+        .replace(/\(/g, '\\(')
+        .replace(/\)/g, '\\)')
+        .replace(/~/g, '\\~')
+        .replace(/`/g, '\\`')
+        .replace(/>/g, '\\>')
+        .replace(/#/g, '\\#')
+        .replace(/\+/g, '\\+')
+        .replace(/-/g, '\\-')
+        .replace(/=/g, '\\=')
+        .replace(/\|/g, '\\|')
+        .replace(/\{/g, '\\{')
+        .replace(/\}/g, '\\}')
+        .replace(/\./g, '\\.')
+        .replace(/!/g, '\\!');
+    }
+
     // Список товаров
     products.forEach((product, index) => {
       const sellerName = product.seller_id?.username || 
@@ -116,9 +141,9 @@ ${t.category5}
                         t.seller;
       const rating = product.rating > 0 ? `⭐ ${product.rating.toFixed(1)}` : t.new;
       
-      message += `${index + 1}. **${product.title}**\n`;
+      message += `${index + 1}. *${escapeMarkdown(product.title)}*\n`;
       message += `   💰 ${product.price} USDT | ${rating}\n`;
-      message += `   👤 ${sellerName}\n\n`;
+      message += `   👤 ${escapeMarkdown(sellerName)}\n\n`;
     });
 
     // Клавиатура с товарами и навигацией
@@ -244,11 +269,11 @@ async function showProduct(bot, chatId, productId, telegramUser = null) {
 
     const t = texts[lang] || texts.ru;
 
-    let message = `📦 **${product.title}**\n\n`;
-    message += `${t.description}\n${product.description}\n\n`;
-    message += `${t.price} **${product.price} USDT**\n`;
-    message += `${t.category} ${getCategoryEmoji(product.category)} ${product.category}\n\n`;
-    message += `${t.seller} ${sellerName}\n`;
+    let message = `📦 *${escapeMarkdown(product.title)}*\n\n`;
+    message += `${t.description}\n${escapeMarkdown(product.description)}\n\n`;
+    message += `${t.price} *${product.price} USDT*\n`;
+    message += `${t.category} ${getCategoryEmoji(product.category)} ${escapeMarkdown(product.category)}\n\n`;
+    message += `${t.seller} ${escapeMarkdown(sellerName)}\n`;
     message += `${sellerRating} | ${t.sold}: ${salesCount}\n\n`;
     message += `${t.views}: ${product.views_count}\n`;
     message += `${t.reviews}: ${product.reviews_count || 0}\n`;
@@ -348,7 +373,7 @@ async function searchProducts(bot, chatId, query, telegramUser = null) {
     message += `${t.found} ${products.length} ${t.products}\n\n`;
 
     products.forEach((product, index) => {
-      message += `${index + 1}. **${product.title}**\n`;
+      message += `${index + 1}. *${escapeMarkdown(product.title)}*\n`;
       message += `   💰 ${product.price} USDT\n\n`;
     });
 

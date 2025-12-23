@@ -2,6 +2,7 @@ const Product = require('../../database/models/Product');
 const User = require('../../database/models/User');
 const Order = require('../../database/models/Order');
 const paymentService = require('../services/paymentService');
+const { escapeMarkdown } = require('../utils/markdown');
 
 // Хранилище активных проверок платежей
 const activePaymentChecks = new Map();
@@ -429,7 +430,7 @@ async function deliverProduct(bot, chatId, order, lang = 'ru') {
     const t = deliveryTexts[lang] || deliveryTexts.ru;
 
     let deliveryMessage = `${t.title}\n\n`;
-    deliveryMessage += `**${product.title}**\n\n`;
+    deliveryMessage += `*${escapeMarkdown(product.title)}*\n\n`;
     deliveryMessage += `${t.product}\n`;
 
     // Отправляем файл/ссылку/текст в зависимости от типа

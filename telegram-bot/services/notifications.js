@@ -1,5 +1,6 @@
 const User = require('../../database/models/User');
 const Product = require('../../database/models/Product');
+const { escapeMarkdown } = require('../utils/markdown');
 
 /**
  * Отправка уведомлений о новых товарах подписанным пользователям
@@ -65,7 +66,8 @@ async function notifyNewProduct(bot, productId) {
 
         const t = texts[lang] || texts.ru;
 
-        const message = `${t.title}\n\n${emoji} ${t.product} **${product.title}**\n${t.price} ${product.price} USDT\n${t.seller} ${product.seller_id.username || product.seller_id.first_name || 'Продавец'}\n\n${product.description.substring(0, 100)}${product.description.length > 100 ? '...' : ''}`;
+        const sellerName = product.seller_id.username || product.seller_id.first_name || (lang === 'en' ? 'Seller' : 'Продавец');
+        const message = `${t.title}\n\n${emoji} ${t.product} *${escapeMarkdown(product.title)}*\n${t.price} ${product.price} USDT\n${t.seller} ${escapeMarkdown(sellerName)}\n\n${escapeMarkdown(product.description.substring(0, 100))}${product.description.length > 100 ? '...' : ''}`;
 
         const keyboard = {
           reply_markup: {

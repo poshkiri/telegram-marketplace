@@ -1,6 +1,7 @@
 const Product = require('../../database/models/Product');
 const User = require('../../database/models/User');
 const { notifyNewProduct } = require('../services/notifications');
+const { escapeMarkdown } = require('../utils/markdown');
 
 // Начать процесс продажи
 async function startSelling(bot, chatId, telegramUser) {
@@ -517,11 +518,11 @@ async function showProductPreview(bot, chatId, productData, user) {
   const message = `
 ${t.title}
 
-${t.name} ${productData.title}
-${t.description} ${productData.description.substring(0, 100)}...
+${t.name} ${escapeMarkdown(productData.title)}
+${t.description} ${escapeMarkdown(productData.description.substring(0, 100))}...
 ${t.price} ${productData.price} USDT
-${t.category} ${productData.category}
-${t.file} ${productData.file_url || t.notSpecified}
+${t.category} ${escapeMarkdown(productData.category)}
+${t.file} ${escapeMarkdown(productData.file_url || t.notSpecified)}
 
 ${t.question}
   `;
@@ -675,7 +676,7 @@ async function showMyProducts(bot, chatId, telegramUser) {
     let message = `${t.title}\n\n`;
     products.forEach((product, index) => {
       const statusEmoji = product.status === 'active' ? '✅' : '⏸️';
-      message += `${index + 1}. ${statusEmoji} **${product.title}**\n`;
+      message += `${index + 1}. ${statusEmoji} *${escapeMarkdown(product.title)}*\n`;
       message += `   💰 ${product.price} USDT | 👁 ${product.views_count} | 🛒 ${product.sales_count}\n\n`;
     });
 

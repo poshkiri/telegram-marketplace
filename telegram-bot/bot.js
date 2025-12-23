@@ -36,6 +36,7 @@ const {
   showPromoCodeForm
 } = require('./commands/promo');
 const { handleError } = require('./utils/errorHandler');
+const { escapeMarkdown } = require('./utils/markdown');
 const User = require('../database/models/User');
 const Order = require('../database/models/Order');
 
@@ -656,10 +657,10 @@ async function showMyOrders(bot, chatId, telegramUser) {
       const product = order.product_id;
       const status = t[order.status] || order.status;
       
-      message += `${index + 1}. **${product?.title || t.product}**\n`;
+      message += `${index + 1}. *${escapeMarkdown(product?.title || t.product)}*\n`;
       message += `   💰 ${order.price} USDT\n`;
       message += `   📊 ${status}\n`;
-      message += `   🆔 ${order.order_id}\n\n`;
+      message += `   🆔 ${escapeMarkdown(order.order_id)}\n\n`;
     });
 
     const keyboard = {
