@@ -207,13 +207,7 @@ async function showProduct(bot, chatId, productId, telegramUser = null) {
       }
     }
 
-    // Получаем язык пользователя
-    let lang = 'ru';
-    if (telegramUser) {
-      const User = require('../../database/models/User');
-      const user = await User.findOne({ telegram_id: telegramUser.id });
-      lang = user?.language || 'ru';
-    }
+    // Язык уже получен выше (строка 170), используем его
 
     const texts = {
       ru: {
