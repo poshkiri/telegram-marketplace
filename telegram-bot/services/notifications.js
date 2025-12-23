@@ -111,9 +111,9 @@ async function notifySale(bot, order) {
     const lang = seller.language || 'ru';
 
     const texts = {
-      ru: `💰 **Новая продажа!**\n\n📦 Товар: ${product.title}\n💵 Сумма: ${order.price} USDT\n💼 Комиссия: ${order.commission} USDT\n💰 К получению: ${(order.price - order.commission).toFixed(2)} USDT`,
-      en: `💰 **New sale!**\n\n📦 Product: ${product.title}\n💵 Amount: ${order.price} USDT\n💼 Commission: ${order.commission} USDT\n💰 To receive: ${(order.price - order.commission).toFixed(2)} USDT`,
-      uk: `💰 **Новий продаж!**\n\n📦 Товар: ${product.title}\n💵 Сума: ${order.price} USDT\n💼 Комісія: ${order.commission} USDT\n💰 До отримання: ${(order.price - order.commission).toFixed(2)} USDT`
+      ru: `💰 *Новая продажа!*\n\n📦 Товар: ${escapeMarkdown(product.title)}\n💵 Сумма: ${order.price} USDT\n💼 Комиссия: ${order.commission} USDT\n💰 К получению: ${(order.price - order.commission).toFixed(2)} USDT`,
+      en: `💰 *New sale!*\n\n📦 Product: ${escapeMarkdown(product.title)}\n💵 Amount: ${order.price} USDT\n💼 Commission: ${order.commission} USDT\n💰 To receive: ${(order.price - order.commission).toFixed(2)} USDT`,
+      uk: `💰 *Новий продаж!*\n\n📦 Товар: ${escapeMarkdown(product.title)}\n💵 Сума: ${order.price} USDT\n💼 Комісія: ${order.commission} USDT\n💰 До отримання: ${(order.price - order.commission).toFixed(2)} USDT`
     };
 
     await bot.sendMessage(seller.telegram_id, texts[lang] || texts.ru, { parse_mode: 'Markdown' });

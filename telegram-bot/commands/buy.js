@@ -435,9 +435,9 @@ async function deliverProduct(bot, chatId, order, lang = 'ru') {
 
     // Отправляем файл/ссылку/текст в зависимости от типа
     if (product.file_type === 'link' && product.file_url) {
-      deliveryMessage += `${t.file}\n${product.file_url}\n\n`;
+      deliveryMessage += `${t.file}\n${escapeMarkdown(product.file_url)}\n\n`;
     } else if (product.file_type === 'text' && product.file_url) {
-      deliveryMessage += `${t.text}\n${product.file_url}\n\n`;
+      deliveryMessage += `${t.text}\n${escapeMarkdown(product.file_url)}\n\n`;
     }
 
     deliveryMessage += `\n${t.thanks}\n${t.support}`;
@@ -480,11 +480,11 @@ async function deliverProduct(bot, chatId, order, lang = 'ru') {
     // Уведомляем продавца о продаже
     if (seller.telegram_id) {
       const sellerNotification = {
-        ru: `💰 Продажа!\n\nВаш товар "${product.title}" был куплен за ${order.price} USDT.\nКомиссия: ${order.commission} USDT\nК получению: ${(order.price - order.commission).toFixed(2)} USDT`,
-        en: `💰 Sale!\n\nYour product "${product.title}" was purchased for ${order.price} USDT.\nCommission: ${order.commission} USDT\nTo receive: ${(order.price - order.commission).toFixed(2)} USDT`
+        ru: `💰 Продажа!\n\nВаш товар *${escapeMarkdown(product.title)}* был куплен за ${order.price} USDT.\nКомиссия: ${order.commission} USDT\nК получению: ${(order.price - order.commission).toFixed(2)} USDT`,
+        en: `💰 Sale!\n\nYour product *${escapeMarkdown(product.title)}* was purchased for ${order.price} USDT.\nCommission: ${order.commission} USDT\nTo receive: ${(order.price - order.commission).toFixed(2)} USDT`
       };
       const sellerLang = seller.language || 'ru';
-      await bot.sendMessage(seller.telegram_id, sellerNotification[sellerLang] || sellerNotification.ru);
+      await bot.sendMessage(seller.telegram_id, sellerNotification[sellerLang] || sellerNotification.ru, { parse_mode: 'Markdown' });
     }
 
   } catch (error) {

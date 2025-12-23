@@ -113,7 +113,10 @@ setupBotCommands().catch(err => console.error('❌ Ошибка установк
 function getTexts(lang = 'ru') {
   const texts = {
     ru: {
-      welcome: (username) => `🛍️ Привет, ${username}!\n\nДобро пожаловать в **Telegram Marketplace**!\n\nЗдесь вы можете:\n• 🛒 Покупать цифровые товары\n• 💼 Продавать свои продукты\n• 💰 Получать оплату в USDT\n\nВыберите действие:`,
+      welcome: (username) => {
+        const safeUsername = escapeMarkdown(username || 'Пользователь');
+        return `🛍️ Привет, ${safeUsername}!\n\nДобро пожаловать в *Telegram Marketplace*!\n\nЗдесь вы можете:\n• 🛒 Покупать цифровые товары\n• 💼 Продавать свои продукты\n• 💰 Получать оплату в USDT\n\nВыберите действие:`;
+      },
       catalog: '🛒 Каталог',
       sell: '💼 Продавать',
       myOrders: '📦 Мои покупки',
@@ -126,7 +129,10 @@ function getTexts(lang = 'ru') {
       mainMenu: '🔙 Главное меню'
     },
     en: {
-      welcome: (username) => `🛍️ Hello, ${username}!\n\nWelcome to **Telegram Marketplace**!\n\nHere you can:\n• 🛒 Buy digital goods\n• 💼 Sell your products\n• 💰 Receive payment in USDT\n\nChoose an action:`,
+      welcome: (username) => {
+        const safeUsername = escapeMarkdown(username || 'User');
+        return `🛍️ Hello, ${safeUsername}!\n\nWelcome to *Telegram Marketplace*!\n\nHere you can:\n• 🛒 Buy digital goods\n• 💼 Sell your products\n• 💰 Receive payment in USDT\n\nChoose an action:`;
+      },
       catalog: '🛒 Catalog',
       sell: '💼 Sell',
       myOrders: '📦 My Orders',
@@ -200,13 +206,13 @@ bot.onText(/\/start/, async (msg) => {
     return;
   }
   
-  const username = telegramUser.username || telegramUser.first_name;
+  const username = telegramUser.username || telegramUser.first_name || (user.language === 'en' ? 'User' : 'Пользователь');
   const texts = getTexts(user.language);
   
   const welcomeMessage = texts.welcome(username);
   const keyboard = getMainMenuKeyboard(user.language);
   
-  bot.sendMessage(chatId, welcomeMessage, keyboard);
+  bot.sendMessage(chatId, welcomeMessage, { ...keyboard, parse_mode: 'Markdown' });
 });
 
 // Обработка нажатий на кнопки
@@ -232,7 +238,7 @@ bot.on('callback_query', async (query) => {
         await user.save();
         
         const texts = getTexts(lang);
-        const username = telegramUser.username || telegramUser.first_name;
+        const username = telegramUser.username || telegramUser.first_name || (lang === 'en' ? 'User' : 'Пользователь');
         
         // Обновляем сообщение о выборе языка
         try {
@@ -249,7 +255,7 @@ bot.on('callback_query', async (query) => {
         const welcomeMessage = texts.welcome(username);
         const keyboard = getMainMenuKeyboard(lang);
         
-        await bot.sendMessage(chatId, welcomeMessage, keyboard);
+        await bot.sendMessage(chatId, welcomeMessage, { ...keyboard, parse_mode: 'Markdown' });
       }
     }
     
@@ -519,12 +525,12 @@ bot.on('message', async (msg) => {
   // Показываем приветствие или главное меню
   if (!global.userStates || !global.userStates[chatId]) {
     const texts = getTexts(user.language);
-    const username = telegramUser.username || telegramUser.first_name;
+    const username = telegramUser.username || telegramUser.first_name || (user.language === 'en' ? 'User' : 'Пользователь');
     
     const welcomeMessage = texts.welcome(username);
     const keyboard = getMainMenuKeyboard(user.language);
     
-    await bot.sendMessage(chatId, welcomeMessage, keyboard);
+    await bot.sendMessage(chatId, welcomeMessage, { ...keyboard, parse_mode: 'Markdown' });
     return;
   }
   
