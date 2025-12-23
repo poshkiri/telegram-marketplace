@@ -137,7 +137,7 @@ async function handleRatingSelection(bot, chatId, rating, orderId, telegramUser)
       return bot.sendMessage(chatId, errorTexts[lang] || errorTexts.ru);
     }
 
-    const lang = user.language || 'ru';
+    // Язык уже получен выше (строка 131), используем его
 
     // Сохраняем состояние для ввода комментария
     if (!global.userStates) global.userStates = {};
