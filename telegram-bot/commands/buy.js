@@ -45,7 +45,7 @@ async function initiatePurchase(bot, chatId, productId, telegramUser) {
       return bot.sendMessage(chatId, et.ownProduct);
     }
 
-    const lang = user.language || 'ru';
+    // Язык уже получен выше (строка 15), используем его
 
     // Показываем выбор сети для оплаты
     await showNetworkSelection(bot, chatId, productId, lang);
