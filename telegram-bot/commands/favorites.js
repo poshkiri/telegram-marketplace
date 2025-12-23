@@ -39,7 +39,6 @@ async function addToFavorites(bot, chatId, productId, telegramUser) {
     });
 
     if (existing) {
-      const lang = user.language || 'ru';
       const texts = {
         ru: '✅ Товар уже в избранном!',
         en: '✅ Product already in favorites!'
@@ -53,7 +52,6 @@ async function addToFavorites(bot, chatId, productId, telegramUser) {
       product_id: productId
     });
 
-    const lang = user.language || 'ru';
     const texts = {
       ru: '✅ Товар добавлен в избранное!',
       en: '✅ Product added to favorites!'
@@ -130,7 +128,6 @@ async function showFavorites(bot, chatId, telegramUser, page = 0) {
       return bot.sendMessage(chatId, errorTexts[lang] || errorTexts.ru);
     }
 
-    const lang = user.language || 'ru';
     const limit = 5;
     const skip = page * limit;
 
